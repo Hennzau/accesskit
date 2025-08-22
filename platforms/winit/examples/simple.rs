@@ -1,13 +1,19 @@
 use accesskit::{Action, ActionRequest, Live, Node, NodeId, Rect, Role, Tree, TreeUpdate};
 use accesskit_winit::{Adapter, Event as AccessKitEvent, WindowEvent as AccessKitWindowEvent};
-use std::error::Error;
+use std::{
+    error::Error,
+    sync::mpsc::{Receiver, Sender},
+};
 use winit::{
     application::ApplicationHandler,
+    dpi::LogicalSize,
     event::{ElementState, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop, EventLoopProxy},
     keyboard::Key,
-    window::{Window, WindowId},
+    window::{Window, WindowAttributes, WindowId},
 };
+
+mod fill;
 
 const WINDOW_TITLE: &str = "Hello world";
 
@@ -127,13 +133,13 @@ impl UiState {
 }
 
 struct WindowState {
-    window: Window,
+    window: Box<dyn Window>,
     adapter: Adapter,
     ui: UiState,
 }
 
 impl WindowState {
-    fn new(window: Window, adapter: Adapter, ui: UiState) -> Self {
+    fn new(window: Box<dyn Window>, adapter: Adapter, ui: UiState) -> Self {
         Self {
             window,
             adapter,
@@ -143,26 +149,37 @@ impl WindowState {
 }
 
 struct Application {
-    event_loop_proxy: EventLoopProxy<AccessKitEvent>,
+    sender: Sender<AccessKitEvent>,
+    receiver: Receiver<AccessKitEvent>,
+    event_loop_proxy: EventLoopProxy,
     window: Option<WindowState>,
 }
 
 impl Application {
-    fn new(event_loop_proxy: EventLoopProxy<AccessKitEvent>) -> Self {
+    fn new(event_loop_proxy: EventLoopProxy) -> Self {
+        let (sender, receiver) = std::sync::mpsc::channel();
+
         Self {
             event_loop_proxy,
+            sender,
+            receiver,
             window: None,
         }
     }
 
-    fn create_window(&mut self, event_loop: &ActiveEventLoop) -> Result<(), Box<dyn Error>> {
-        let window_attributes = Window::default_attributes()
+    fn create_window(&mut self, event_loop: &dyn ActiveEventLoop) -> Result<(), Box<dyn Error>> {
+        let window_attributes = WindowAttributes::default()
             .with_title(WINDOW_TITLE)
-            .with_visible(false);
+            .with_surface_size(LogicalSize::new(400.0, 400.0))
+            .with_visible(true);
 
         let window = event_loop.create_window(window_attributes)?;
-        let adapter =
-            Adapter::with_event_loop_proxy(event_loop, &window, self.event_loop_proxy.clone());
+        let adapter = Adapter::with_event_loop_proxy(
+            event_loop,
+            window.as_ref(),
+            self.sender.clone(),
+            self.event_loop_proxy.clone(),
+        );
         window.set_visible(true);
 
         self.window = Some(WindowState::new(window, adapter, UiState::new()));
@@ -170,8 +187,13 @@ impl Application {
     }
 }
 
-impl ApplicationHandler<AccessKitEvent> for Application {
-    fn window_event(&mut self, _: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
+impl ApplicationHandler for Application {
+    fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
+        self.create_window(event_loop)
+            .expect("failed to create initial window");
+    }
+
+    fn window_event(&mut self, _: &dyn ActiveEventLoop, _: WindowId, event: WindowEvent) {
         let window = match &mut self.window {
             Some(window) => window,
             None => return,
@@ -179,10 +201,21 @@ impl ApplicationHandler<AccessKitEvent> for Application {
         let adapter = &mut window.adapter;
         let state = &mut window.ui;
 
-        adapter.process_event(&window.window, &event);
+        adapter.process_event(window.window.as_ref(), &event);
         match event {
             WindowEvent::CloseRequested => {
                 self.window = None;
+            }
+            WindowEvent::SurfaceResized(_) => {
+                if let Some(window) = &self.window {
+                    window.window.request_redraw();
+                }
+            }
+            WindowEvent::RedrawRequested => {
+                if let Some(window) = &self.window {
+                    window.window.pre_present_notify();
+                    fill::fill_window(window.window.as_ref());
+                }
             }
             WindowEvent::KeyboardInput {
                 event:
@@ -201,9 +234,11 @@ impl ApplicationHandler<AccessKitEvent> for Application {
                     };
                     state.set_focus(adapter, new_focus);
                 }
-                Key::Named(winit::keyboard::NamedKey::Space) => {
-                    let id = state.focus;
-                    state.press_button(adapter, id);
+                Key::Character(c) => {
+                    if c == " " {
+                        let id = state.focus;
+                        state.press_button(adapter, id);
+                    }
                 }
                 _ => (),
             },
@@ -211,41 +246,38 @@ impl ApplicationHandler<AccessKitEvent> for Application {
         }
     }
 
-    fn user_event(&mut self, _: &ActiveEventLoop, user_event: AccessKitEvent) {
-        let window = match &mut self.window {
-            Some(window) => window,
-            None => return,
-        };
-        let adapter = &mut window.adapter;
-        let state = &mut window.ui;
+    fn proxy_wake_up(&mut self, _: &dyn ActiveEventLoop) {
+        while let Ok(user_event) = self.receiver.try_recv() {
+            let window = match &mut self.window {
+                Some(window) => window,
+                None => return,
+            };
+            let adapter = &mut window.adapter;
+            let state = &mut window.ui;
 
-        match user_event.window_event {
-            AccessKitWindowEvent::InitialTreeRequested => {
-                adapter.update_if_active(|| state.build_initial_tree());
-            }
-            AccessKitWindowEvent::ActionRequested(ActionRequest { action, target, .. }) => {
-                if target == BUTTON_1_ID || target == BUTTON_2_ID {
-                    match action {
-                        Action::Focus => {
-                            state.set_focus(adapter, target);
+            match user_event.window_event {
+                AccessKitWindowEvent::InitialTreeRequested => {
+                    adapter.update_if_active(|| state.build_initial_tree());
+                }
+                AccessKitWindowEvent::ActionRequested(ActionRequest { action, target, .. }) => {
+                    if target == BUTTON_1_ID || target == BUTTON_2_ID {
+                        match action {
+                            Action::Focus => {
+                                state.set_focus(adapter, target);
+                            }
+                            Action::Click => {
+                                state.press_button(adapter, target);
+                            }
+                            _ => (),
                         }
-                        Action::Click => {
-                            state.press_button(adapter, target);
-                        }
-                        _ => (),
                     }
                 }
+                AccessKitWindowEvent::AccessibilityDeactivated => (),
             }
-            AccessKitWindowEvent::AccessibilityDeactivated => (),
         }
     }
 
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        self.create_window(event_loop)
-            .expect("failed to create initial window");
-    }
-
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &dyn ActiveEventLoop) {
         if self.window.is_none() {
             event_loop.exit();
         }
@@ -270,7 +302,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     ))]
     println!("Enable Orca with [Super]+[Alt]+[S].");
 
-    let event_loop = EventLoop::with_user_event().build()?;
+    let event_loop = EventLoop::new()?;
     let mut state = Application::new(event_loop.create_proxy());
     event_loop.run_app(&mut state).map_err(Into::into)
 }

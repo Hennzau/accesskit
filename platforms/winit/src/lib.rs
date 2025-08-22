@@ -49,6 +49,8 @@ compile_error!(
     "Both \"rwh_06\" (default) and \"rwh_05\" features cannot be enabled at the same time."
 );
 
+use std::sync::mpsc::Sender;
+
 use accesskit::{ActionHandler, ActionRequest, ActivationHandler, DeactivationHandler, TreeUpdate};
 use winit::{
     event::WindowEvent as WinitWindowEvent,
@@ -80,7 +82,8 @@ pub enum WindowEvent {
 
 struct WinitActivationHandler<T: From<Event> + Send + 'static> {
     window_id: WindowId,
-    proxy: EventLoopProxy<T>,
+    sender: Sender<T>,
+    proxy: EventLoopProxy,
 }
 
 impl<T: From<Event> + Send + 'static> ActivationHandler for WinitActivationHandler<T> {
@@ -89,14 +92,18 @@ impl<T: From<Event> + Send + 'static> ActivationHandler for WinitActivationHandl
             window_id: self.window_id,
             window_event: WindowEvent::InitialTreeRequested,
         };
-        self.proxy.send_event(event.into()).ok();
+
+        self.sender.send(event.into()).ok();
+        self.proxy.wake_up();
+
         None
     }
 }
 
 struct WinitActionHandler<T: From<Event> + Send + 'static> {
     window_id: WindowId,
-    proxy: EventLoopProxy<T>,
+    sender: Sender<T>,
+    proxy: EventLoopProxy,
 }
 
 impl<T: From<Event> + Send + 'static> ActionHandler for WinitActionHandler<T> {
@@ -105,13 +112,16 @@ impl<T: From<Event> + Send + 'static> ActionHandler for WinitActionHandler<T> {
             window_id: self.window_id,
             window_event: WindowEvent::ActionRequested(request),
         };
-        self.proxy.send_event(event.into()).ok();
+
+        self.sender.send(event.into()).ok();
+        self.proxy.wake_up();
     }
 }
 
 struct WinitDeactivationHandler<T: From<Event> + Send + 'static> {
     window_id: WindowId,
-    proxy: EventLoopProxy<T>,
+    sender: Sender<T>,
+    proxy: EventLoopProxy,
 }
 
 impl<T: From<Event> + Send + 'static> DeactivationHandler for WinitDeactivationHandler<T> {
@@ -120,7 +130,9 @@ impl<T: From<Event> + Send + 'static> DeactivationHandler for WinitDeactivationH
             window_id: self.window_id,
             window_event: WindowEvent::AccessibilityDeactivated,
         };
-        self.proxy.send_event(event.into()).ok();
+
+        self.sender.send(event.into()).ok();
+        self.proxy.wake_up();
     }
 }
 
@@ -147,20 +159,27 @@ impl Adapter {
     ///
     /// Panics if the window is already visible.
     pub fn with_event_loop_proxy<T: From<Event> + Send + 'static>(
-        event_loop: &ActiveEventLoop,
-        window: &Window,
-        proxy: EventLoopProxy<T>,
+        event_loop: &dyn ActiveEventLoop,
+        window: &dyn Window,
+        sender: Sender<T>,
+        proxy: EventLoopProxy,
     ) -> Self {
         let window_id = window.id();
         let activation_handler = WinitActivationHandler {
             window_id,
+            sender: sender.clone(),
             proxy: proxy.clone(),
         };
         let action_handler = WinitActionHandler {
             window_id,
+            sender: sender.clone(),
             proxy: proxy.clone(),
         };
-        let deactivation_handler = WinitDeactivationHandler { window_id, proxy };
+        let deactivation_handler = WinitDeactivationHandler {
+            window_id,
+            sender,
+            proxy,
+        };
         Self::with_direct_handlers(
             event_loop,
             window,
@@ -188,8 +207,8 @@ impl Adapter {
     ///
     /// Panics if the window is already visible.
     pub fn with_direct_handlers(
-        event_loop: &ActiveEventLoop,
-        window: &Window,
+        event_loop: &dyn ActiveEventLoop,
+        window: &dyn Window,
         activation_handler: impl 'static + ActivationHandler + Send,
         action_handler: impl 'static + ActionHandler + Send,
         deactivation_handler: impl 'static + DeactivationHandler + Send,
@@ -225,17 +244,23 @@ impl Adapter {
     ///
     /// Panics if the window is already visible.
     pub fn with_mixed_handlers<T: From<Event> + Send + 'static>(
-        event_loop: &ActiveEventLoop,
-        window: &Window,
+        event_loop: &dyn ActiveEventLoop,
+        window: &dyn Window,
         activation_handler: impl 'static + ActivationHandler + Send,
-        proxy: EventLoopProxy<T>,
+        sender: Sender<T>,
+        proxy: EventLoopProxy,
     ) -> Self {
         let window_id = window.id();
         let action_handler = WinitActionHandler {
             window_id,
+            sender: sender.clone(),
             proxy: proxy.clone(),
         };
-        let deactivation_handler = WinitDeactivationHandler { window_id, proxy };
+        let deactivation_handler = WinitDeactivationHandler {
+            window_id,
+            sender,
+            proxy,
+        };
         Self::with_direct_handlers(
             event_loop,
             window,
@@ -249,7 +274,7 @@ impl Adapter {
     ///
     /// This must be called whenever a new window event is received
     /// and before it is handled by the application.
-    pub fn process_event(&mut self, window: &Window, event: &WinitWindowEvent) {
+    pub fn process_event(&mut self, window: &dyn Window, event: &WinitWindowEvent) {
         self.inner.process_event(window, event);
     }
 
