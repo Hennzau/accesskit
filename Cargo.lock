@@ -638,7 +638,7 @@ checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
 [[package]]
 name = "dpi"
 version = "0.1.2"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 
 [[package]]
 name = "drm"
@@ -2754,7 +2754,7 @@ checksum = "271414315aff87387382ec3d271b52d7ae78726f5d44ac98b4f4030c91880486"
 [[package]]
 name = "winit"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "cfg_aliases",
@@ -2780,7 +2780,7 @@ dependencies = [
 [[package]]
 name = "winit-android"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "android-activity",
  "bitflags",
@@ -2795,7 +2795,7 @@ dependencies = [
 [[package]]
 name = "winit-appkit"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "block2 0.6.1",
@@ -2817,7 +2817,7 @@ dependencies = [
 [[package]]
 name = "winit-common"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "memmap2",
  "objc2 0.6.2",
@@ -2832,7 +2832,7 @@ dependencies = [
 [[package]]
 name = "winit-core"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "cursor-icon",
@@ -2846,7 +2846,7 @@ dependencies = [
 [[package]]
 name = "winit-orbital"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "dpi",
@@ -2861,7 +2861,7 @@ dependencies = [
 [[package]]
 name = "winit-uikit"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "block2 0.6.1",
@@ -2881,7 +2881,7 @@ dependencies = [
 [[package]]
 name = "winit-wayland"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "ahash",
  "bitflags",
@@ -2907,7 +2907,7 @@ dependencies = [
 [[package]]
 name = "winit-web"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "atomic-waker",
  "bitflags",
@@ -2929,7 +2929,7 @@ dependencies = [
 [[package]]
 name = "winit-win32"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "cursor-icon",
@@ -2945,7 +2945,7 @@ dependencies = [
 [[package]]
 name = "winit-x11"
 version = "0.30.12"
-source = "git+https://github.com/Hennzau/winit?rev=03ae6863f9f82c4a3f24631f65e95495e792a830#03ae6863f9f82c4a3f24631f65e95495e792a830"
+source = "git+https://github.com/Hennzau/winit#8f85cf7acf05ee2c75c3c4438242229dc329fbf2"
 dependencies = [
  "bitflags",
  "bytemuck",

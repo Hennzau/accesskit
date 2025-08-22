@@ -21,7 +21,7 @@ tokio = ["accesskit_unix/tokio"]
 [dependencies]
 accesskit = { version = "0.21.0", path = "../../common" }
 
-winit = { git = "https://github.com/Hennzau/winit", rev = "03ae6863f9f82c4a3f24631f65e95495e792a830", default-features = false }
+winit = { git = "https://github.com/Hennzau/winit", default-features = false }
 
 rwh_05 = { package = "raw-window-handle", version = "0.5", features = [
     "std",
@@ -47,7 +47,6 @@ accesskit_android = { version = "0.4.0", path = "../android", optional = true, f
 
 [dev-dependencies.winit]
 git = "https://github.com/Hennzau/winit"
-rev = "03ae6863f9f82c4a3f24631f65e95495e792a830"
 default-features = false
 features = ["x11", "wayland", "wayland-dlopen", "wayland-csd-adwaita"]
 
